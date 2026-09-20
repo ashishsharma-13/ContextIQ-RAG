@@ -15,7 +15,7 @@ GREETING_RESPONSES = {
     "greeting": (
         "Hello! I am **ContextIQ**, your personal context-aware knowledge assistant.\n\n"
         "I can help you analyze, search, and answer questions about your uploaded PDF documents. "
-        "Upload your files in the **Documents** tab or ask me a question about any document you've already indexed!"
+        "Upload your files in the **Document Management** tab or ask me a question about any document you've already indexed!"
     ),
     "thanks": (
         "You're welcome! Let me know if you have any more questions about your uploaded documents."
@@ -26,9 +26,15 @@ GREETING_RESPONSES = {
 def is_greeting_query(query: str) -> bool:
     """
     Determines if a user input is a general conversational greeting or salutation.
+    Ensures personal or document queries (e.g., 'who am I', 'tell me about me', 'resume') are NOT treated as greetings.
     """
     cleaned = query.strip().lower()
-    # Check short 1-2 word inputs
+    
+    # Exclude self-referential or resume questions from greetings
+    if any(k in cleaned for k in ["resume", "cv", "about me", "who am i", "my profile", "my skills", "document", "uploaded"]):
+        return False
+
+    # Check short 1-3 word inputs against greeting patterns
     if len(cleaned.split()) <= 3:
         for pattern in GREETING_PATTERNS:
             if re.match(pattern, cleaned):
@@ -56,6 +62,8 @@ STRICT GROUNDING & FORMATTING RULES:
 3. If the provided Context does NOT contain sufficient information to answer the question, respond EXACTLY:
    "I couldn't find sufficient information about this in your uploaded documents."
 4. Format your output cleanly in natural markdown text. Do NOT include raw bracket citation codes like 【3†L1-L4】 or [1†source] in your response.
+5. RESUME / PERSONAL QUERIES: If the user asks questions referring to 'me', 'my resume', 'who am I', or 'my profile', treat the person or candidate described in the provided document context (e.g. resume, CV, bio, or portfolio) as the user, and provide a clear, professional summary of their background, skills, education, and experience directly from the context.
+6. COMPARATIVE & ALIGNMENT QUERIES: When the user asks whether a job description, assessment, or role aligns with their resume or profile, or asks to compare multiple documents, analyze the context across all provided documents. Explicitly outline matching skills and responsibilities, partial alignments, and any requirements not covered in the candidate's background based strictly on the context.
 
 Context:
 {context}

@@ -13,11 +13,26 @@ def test_health_endpoint():
     assert data["status"] in ["healthy", "degraded"]
 
 
+def test_health_endpoint_with_session():
+    """Tests the /health endpoint with session isolation header."""
+    response = client.get("/health", headers={"x-session-id": "test_session_xyz"})
+    assert response.status_code == 200
+    data = response.json()
+    assert "vector_store" in data
+
+
 def test_documents_endpoint():
     """Tests the /documents listing endpoint."""
     response = client.get("/documents")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+
+def test_documents_endpoint_with_session():
+    """Tests the /documents listing endpoint with session isolation."""
+    response = client.get("/documents", headers={"x-session-id": "empty_session_12345"})
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 def test_ask_empty_question():

@@ -11,21 +11,38 @@ from app.rag.prompts import (
 )
 
 
-def get_llm(api_key: Optional[str] = None):
+def get_llm(api_key: Optional[str] = None, provider: Optional[str] = None):
     """
-    Initializes ChatGroq using the configured Groq API key and model.
+    Initializes LLM based on provider (Groq or OpenAI).
+    Auto-detects provider based on API key prefix or explicit provider choice.
     """
-    key = (api_key and api_key.strip()) or settings.get_groq_api_key()
-    if not key:
-        raise ValueError(
-            "Groq API Key is missing. Please set GROQ_API_KEY in your .env file or sidebar."
+    active_provider = settings.detect_provider(key=api_key, explicit_provider=provider)
+
+    if active_provider == "openai":
+        key = (api_key and api_key.strip()) or settings.get_openai_api_key()
+        if not key:
+            raise ValueError(
+                "OpenAI API Key is missing. Please enter your OpenAI key in the sidebar or configure OPENAI_API_KEY."
+            )
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(
+            model=settings.OPENAI_MODEL,
+            api_key=key,
+            temperature=settings.TEMPERATURE
         )
-    from langchain_groq import ChatGroq
-    return ChatGroq(
-        model=settings.GROQ_MODEL,
-        groq_api_key=key,
-        temperature=settings.TEMPERATURE
-    )
+    else:
+        # Default to Groq
+        key = (api_key and api_key.strip()) or settings.get_groq_api_key()
+        if not key:
+            raise ValueError(
+                "Groq API Key is missing. Please enter your Groq key in the sidebar or configure GROQ_API_KEY."
+            )
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            model=settings.GROQ_MODEL,
+            groq_api_key=key,
+            temperature=settings.TEMPERATURE
+        )
 
 
 def sanitize_llm_output(text: str) -> str:
@@ -93,13 +110,14 @@ def ask_question(
     category_filter: Optional[str] = None,
     top_k: Optional[int] = None,
     api_key: Optional[str] = None,
-    provider: Optional[str] = None
+    provider: Optional[str] = None,
+    session_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Executes the full RAG pipeline:
     1. Greeting intent check -> Returns conversational answer if greeting.
-    2. Retrieval -> Relevancy check.
-    3. Groq LLM Generation -> Output sanitization -> Source attribution.
+    2. Retrieval -> Relevancy check (isolated to session_id for privacy).
+    3. LLM Generation (Groq or OpenAI) -> Output sanitization -> Source attribution.
     """
     cleaned_question = question.strip()
 
@@ -116,7 +134,8 @@ def ask_question(
     chunk_tuples = retrieve_relevant_chunks(
         query=cleaned_question,
         top_k=top_k,
-        category_filter=category_filter
+        category_filter=category_filter,
+        session_id=session_id
     )
 
     # Step 3: Handle cases where no relevant context was found
@@ -128,10 +147,10 @@ def ask_question(
             "grounded": False
         }
 
-    # Step 4: Format context & initialize Groq LLM
+    # Step 4: Format context & initialize LLM (Groq or OpenAI)
     context_text = format_context(chunk_tuples)
     prompt_template = get_rag_prompt_template()
-    llm = get_llm(api_key=api_key)
+    llm = get_llm(api_key=api_key, provider=provider)
 
     chain = prompt_template | llm | StrOutputParser()
 

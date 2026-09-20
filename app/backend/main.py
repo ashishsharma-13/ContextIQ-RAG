@@ -20,11 +20,10 @@ from app.rag.vectorstore import (
 from app.rag.chain import ask_question
 
 
-
 app = FastAPI(
     title="ContextIQ Backend API",
-    description="Context-Aware Personal Knowledge Assistant RAG API (Groq LLaMA 120B + Local HuggingFace Embeddings)",
-    version="2.0.0"
+    description="Context-Aware Personal Knowledge Assistant RAG API (Groq & OpenAI + Local HuggingFace Embeddings + Session Privacy)",
+    version="2.1.0"
 )
 
 app.add_middleware(
@@ -36,10 +35,10 @@ app.add_middleware(
 )
 
 
-def _get_clean_api_key(header_key: Optional[str]) -> Optional[str]:
-    """Cleans header API key and returns None if empty so server .env key is used."""
-    if header_key and header_key.strip():
-        return header_key.strip()
+def _get_clean_header(header_val: Optional[str]) -> Optional[str]:
+    """Cleans header value and returns None if empty."""
+    if header_val and header_val.strip():
+        return header_val.strip()
     return None
 
 
@@ -47,6 +46,7 @@ class AskRequest(BaseModel):
     question: str = Field(..., description="Natural language question")
     category: Optional[str] = Field(None, description="Optional document category filter")
     top_k: Optional[int] = Field(None, description="Number of top chunks to retrieve")
+    provider: Optional[str] = Field(None, description="Optional LLM provider ('groq' or 'openai')")
 
 
 class SourceReference(BaseModel):
@@ -73,6 +73,7 @@ class DocumentSummary(BaseModel):
     upload_timestamp: str
     total_pages: int
     chunk_count: int
+    session_id: Optional[str] = ""
 
 
 class UploadResponse(BaseModel):
@@ -85,9 +86,9 @@ def root():
     """ContextIQ API Root Endpoint."""
     return {
         "message": "Welcome to ContextIQ API",
-        "description": "Context-Aware Personal Knowledge Assistant (Powered by Groq 120B & Local HuggingFace)",
+        "description": "Context-Aware Personal Knowledge Assistant (Powered by Groq/OpenAI & Local HuggingFace)",
         "embedding_provider": "HuggingFace (sentence-transformers/all-MiniLM-L6-v2 - 100% Free Local)",
-        "llm_engine": f"Groq ({settings.GROQ_MODEL})",
+        "supported_engines": ["Groq", "OpenAI"],
         "docs_url": "/docs",
         "health_url": "/health",
         "documents_url": "/documents"
@@ -95,13 +96,14 @@ def root():
 
 
 @app.get("/health", tags=["Health"])
-def health_check():
+def health_check(x_session_id: Optional[str] = Header(None)):
     """Returns application health and vector store stats."""
     try:
-        stats = get_vectorstore_stats()
+        session_id = _get_clean_header(x_session_id)
+        stats = get_vectorstore_stats(session_id=session_id)
         return {
             "status": "healthy",
-            "llm_engine": f"Groq ({settings.GROQ_MODEL})",
+            "llm_engine": f"{settings.LLM_PROVIDER.capitalize()}",
             "vector_store": stats
         }
     except Exception as e:
@@ -114,17 +116,22 @@ def health_check():
 @app.post("/upload", response_model=UploadResponse, tags=["Document Processing"])
 async def upload_documents(
     files: List[UploadFile] = File(...),
-    category: str = Form("Other")
+    category: str = Form("Other"),
+    x_session_id: Optional[str] = Header(None)
 ):
     """
     Uploads and processes PDF files into ChromaDB using local HuggingFace embeddings.
-    No API key is required for document indexing!
+    Isolates documents per session_id for user privacy.
     """
     if not files:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No files were provided for upload."
         )
+
+    session_id = _get_clean_header(x_session_id) or "default_session"
+    session_dir = Path(settings.DOCUMENTS_DIR) / session_id
+    session_dir.mkdir(parents=True, exist_ok=True)
 
     processed_summaries: List[DocumentSummary] = []
     batch_filenames = set()
@@ -137,16 +144,16 @@ async def upload_documents(
             )
 
         fn_lower = file.filename.lower()
-        if fn_lower in batch_filenames or is_document_already_indexed(file.filename):
+        if fn_lower in batch_filenames or is_document_already_indexed(file.filename, session_id=session_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Document '{file.filename}' is already uploaded and indexed. Please delete the existing file before re-uploading."
+                detail=f"Document '{file.filename}' is already uploaded and indexed in your workspace."
             )
         batch_filenames.add(fn_lower)
 
         doc_id = str(uuid.uuid4())
         safe_filename = f"{doc_id}_{file.filename}"
-        save_path = Path(settings.DOCUMENTS_DIR) / safe_filename
+        save_path = session_dir / safe_filename
 
         try:
             with open(save_path, "wb") as buffer:
@@ -166,9 +173,10 @@ async def upload_documents(
 
             for d in docs:
                 d.metadata["source"] = file.filename
+                d.metadata["session_id"] = session_id
 
             chunks = split_documents(docs)
-            add_chunks_to_vectorstore(chunks)
+            add_chunks_to_vectorstore(chunks, session_id=session_id)
 
             summary = DocumentSummary(
                 document_id=doc_id,
@@ -177,7 +185,8 @@ async def upload_documents(
                 category=category,
                 upload_timestamp=docs[0].metadata.get("upload_timestamp", "") if docs else "",
                 total_pages=docs[0].metadata.get("total_pages", 1) if docs else 1,
-                chunk_count=len(chunks)
+                chunk_count=len(chunks),
+                session_id=session_id
             )
             processed_summaries.append(summary)
 
@@ -198,10 +207,13 @@ async def upload_documents(
 @app.post("/ask", response_model=AskResponse, tags=["RAG Question Answering"])
 def ask(
     request: AskRequest,
-    x_api_key: Optional[str] = Header(None)
+    x_api_key: Optional[str] = Header(None),
+    x_session_id: Optional[str] = Header(None),
+    x_provider: Optional[str] = Header(None)
 ):
     """
     Submits a question and returns a grounded answer with source citations.
+    Isolates context to the caller's session_id.
     """
     if not request.question.strip():
         raise HTTPException(
@@ -209,14 +221,18 @@ def ask(
             detail="Question cannot be empty."
         )
 
-    api_key = _get_clean_api_key(x_api_key)
+    api_key = _get_clean_header(x_api_key)
+    session_id = _get_clean_header(x_session_id)
+    provider = _get_clean_header(x_provider) or request.provider
 
     try:
         result = ask_question(
             question=request.question,
             category_filter=request.category,
             top_k=request.top_k,
-            api_key=api_key
+            api_key=api_key,
+            provider=provider,
+            session_id=session_id
         )
         return AskResponse(**result)
     except ValueError as ve:
@@ -232,12 +248,13 @@ def ask(
 
 
 @app.get("/documents", response_model=List[DocumentSummary], tags=["Document Management"])
-def list_documents():
+def list_documents(x_session_id: Optional[str] = Header(None)):
     """
-    Returns a list of all currently indexed documents and metadata.
+    Returns a list of indexed documents isolated to the caller's session_id.
     """
     try:
-        docs = get_indexed_documents()
+        session_id = _get_clean_header(x_session_id)
+        docs = get_indexed_documents(session_id=session_id)
         return [DocumentSummary(**d) for d in docs]
     except Exception as e:
         raise HTTPException(
@@ -247,17 +264,27 @@ def list_documents():
 
 
 @app.delete("/documents/{document_id}", tags=["Document Management"])
-def delete_document(document_id: str):
+def delete_document(
+    document_id: str,
+    x_session_id: Optional[str] = Header(None)
+):
     """
-    Deletes all chunks of a document from Chroma DB and removes the raw file from disk.
+    Deletes all chunks of a document belonging to the caller's session and removes the raw file.
     """
     try:
-        docs = get_indexed_documents()
+        session_id = _get_clean_header(x_session_id)
+        docs = get_indexed_documents(session_id=session_id)
         target_doc = next((d for d in docs if d["document_id"] == document_id), None)
 
-        deleted_chunks = delete_document_by_id(document_id)
+        if not target_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document '{document_id}' not found in your session."
+            )
 
-        if target_doc and target_doc.get("file_path"):
+        deleted_chunks = delete_document_by_id(document_id, session_id=session_id)
+
+        if target_doc.get("file_path"):
             raw_path = Path(target_doc["file_path"])
             if raw_path.exists():
                 os.remove(raw_path)
@@ -266,6 +293,8 @@ def delete_document(document_id: str):
             "message": f"Successfully deleted document '{document_id}'.",
             "deleted_chunks": deleted_chunks
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

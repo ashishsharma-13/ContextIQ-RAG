@@ -115,6 +115,27 @@ If the FastAPI backend server is offline, Streamlit automatically operates in **
 
 ---
 
+## How to Use (Quick Guide)
+
+1. **Connect Your API Key**:
+   - Open the left sidebar and enter your **Groq API Key** (`gsk_...`) or **OpenAI API Key** (`sk-...`).
+   - *(You can get a free Groq key in seconds at [console.groq.com/keys](https://console.groq.com/keys)).*
+
+2. **Upload Documents**:
+   - Switch to the **Document Management** tab.
+   - Drag and drop any PDF files (resumes, notes, manuals, research papers) and click **Process & Index Documents**.
+   - Your files are processed locally and stored in your **private workspace**.
+
+3. **Ask the Assistant**:
+   - Switch to the **Ask Assistant** tab.
+   - Ask questions about your documents in natural language (e.g. *"Summarize my resume"*, *"What are the key findings?"*).
+   - Get grounded answers with verifiable page citations and relevance scores.
+
+4. **Privacy Guaranteed**:
+   - Every user gets a private **Workspace ID** in the sidebar. No other user can see, query, or delete your documents.
+
+---
+
 ## 🧪 Running Automated Tests
 
 Run the complete test suite with `pytest`:
