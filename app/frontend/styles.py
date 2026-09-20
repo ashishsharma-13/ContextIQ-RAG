@@ -14,24 +14,77 @@ CUSTOM_CSS = """
         background-color: transparent !important;
         height: 2rem !important;
     }
-    .main .block-container {
-        max-width: 1080px !important;
+    /* Main Content Centering - Seamless on desktop, collapsed sidebar & mobile */
+    [data-testid="stAppViewContainer"] {
+        display: flex !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+    [data-testid="stAppViewContainer"] > div:not([data-testid="stSidebar"]) {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+    section[data-testid="stMain"],
+    section.stMain,
+    section.main {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    .main .block-container,
+    .stMainBlockContainer,
+    [data-testid="stMainBlockContainer"],
+    [data-testid="block-container"] {
+        max-width: 900px !important;
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        align-self: center !important;
         padding-top: 1rem !important;
         padding-bottom: 3rem !important;
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
-        margin: 0 auto !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        box-sizing: border-box !important;
     }
     [data-testid="stSidebarUserContent"] {
         padding-top: 1.2rem !important;
     }
     
-    /* Sidebar Styling & Width Alignment */
+    /* Sidebar Styling & Width Alignment - Seamless Collapse */
     [data-testid="stSidebar"] {
         background-color: #111827;
         border-right: 1px solid #1F2937;
+        transition: min-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                    max-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                    width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    [data-testid="stSidebar"][aria-expanded="true"],
+    .stApp:not(:has([data-testid="stSidebarCollapsedControl"])) [data-testid="stSidebar"]:not([aria-expanded="false"]) {
         min-width: 320px !important;
         max-width: 340px !important;
+        width: 330px !important;
+    }
+    [data-testid="stSidebar"][aria-expanded="false"],
+    .stApp:has([data-testid="stSidebarCollapsedControl"]) [data-testid="stSidebar"],
+    .stApp:has([data-testid="collapsedControl"]) [data-testid="stSidebar"] {
+        min-width: 0px !important;
+        max-width: 0px !important;
+        width: 0px !important;
+        margin-left: 0px !important;
+        margin-right: 0px !important;
+        padding: 0px !important;
+        border: none !important;
+        overflow: hidden !important;
+        display: none !important;
+        transform: translateX(-100%) !important;
     }
     .sidebar-brand-title {
         font-size: 1.75rem;
@@ -123,9 +176,42 @@ CUSTOM_CSS = """
     /* Main Header Area */
     .header-container {
         display: flex;
-        align-items: flex-start;
-        gap: 18px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         margin-bottom: 24px;
+        width: 100%;
+        text-align: center;
+    }
+    .header-brand-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+    }
+    .header-logo-box {
+        background-color: #1F2937;
+        border: 1px solid #374151;
+        border-radius: 16px;
+        padding: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
+    }
+    .header-logo-img {
+        width: 58px;
+        height: 58px;
+        border-radius: 12px;
+        object-fit: cover;
+        display: block;
+    }
+    .header-titles {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
     }
     .header-icon-box {
         background-color: #1D4ED8;
@@ -134,23 +220,29 @@ CUSTOM_CSS = """
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
     }
     .main-title {
-        font-size: 2.2rem;
+        font-size: 2.15rem;
         font-weight: 800;
         color: #F9FAFB;
-        line-height: 1.1;
-        margin-bottom: 4px;
+        line-height: 1.15;
+        margin-bottom: 3px;
+        letter-spacing: -0.01em;
     }
     .main-subtitle {
-        font-size: 1.05rem;
+        font-size: 1.02rem;
         font-weight: 600;
         color: #93C5FD;
-        margin-bottom: 4px;
+        margin-bottom: 0px;
     }
     .main-desc {
         font-size: 0.92rem;
         color: #9CA3AF;
+        text-align: center;
+        margin-top: 14px;
+        width: 100%;
+        line-height: 1.4;
     }
 
     /* Source Reference Cards */
@@ -219,9 +311,14 @@ CUSTOM_CSS = """
     }
 
     /* Sidebar Collapsed State on Desktop */
+    [data-testid="stSidebar"][aria-expanded="false"] ~ section[data-testid="stMain"] .st-key-chat_unified_bar,
     [data-testid="stSidebar"][aria-expanded="false"] ~ * .st-key-chat_unified_bar,
-    [data-testid="collapsedControl"] + * .st-key-chat_unified_bar {
+    [data-testid="stSidebarCollapsedControl"] ~ * .st-key-chat_unified_bar,
+    [data-testid="collapsedControl"] + * .st-key-chat_unified_bar,
+    .stApp:has([data-testid="stSidebar"][aria-expanded="false"]) .st-key-chat_unified_bar,
+    .stApp:has([data-testid="stSidebarCollapsedControl"]) .st-key-chat_unified_bar {
         left: 50% !important;
+        transform: translateX(-50%) !important;
         width: min(880px, calc(100vw - 48px)) !important;
     }
 
@@ -325,9 +422,15 @@ CUSTOM_CSS = """
             bottom: 6px !important;
         }
     }
+    /* Sidebar Collapsed State on Desktop - Footer Hint */
+    [data-testid="stSidebar"][aria-expanded="false"] ~ section[data-testid="stMain"] .chat-footer-hint,
     [data-testid="stSidebar"][aria-expanded="false"] ~ * .chat-footer-hint,
-    [data-testid="collapsedControl"] + * .chat-footer-hint {
+    [data-testid="stSidebarCollapsedControl"] ~ * .chat-footer-hint,
+    [data-testid="collapsedControl"] + * .chat-footer-hint,
+    .stApp:has([data-testid="stSidebar"][aria-expanded="false"]) .chat-footer-hint,
+    .stApp:has([data-testid="stSidebarCollapsedControl"]) .chat-footer-hint {
         left: 50% !important;
+        transform: translateX(-50%) !important;
         width: min(880px, calc(100vw - 48px)) !important;
     }
 
@@ -337,6 +440,8 @@ CUSTOM_CSS = """
 
     /* Executive Tab Navigation Styling */
     div[data-baseweb="tab-list"] {
+        display: flex !important;
+        justify-content: center !important;
         gap: 8px !important;
         border-bottom: 1px solid #1F2937 !important;
         background-color: transparent !important;
@@ -411,21 +516,46 @@ CUSTOM_CSS = """
     div[data-testid="stTabContent"] [data-testid="stHorizontalBlock"] {
         align-items: stretch !important;
     }
+    div[data-testid="stTabContent"] [data-testid="column"],
     div[data-testid="stTabContent"] [data-testid="stColumn"] {
         display: flex !important;
         flex-direction: column !important;
     }
-    div[data-testid="stTabContent"] [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
+    div[data-testid="stTabContent"] [data-testid="column"] > div,
+    div[data-testid="stTabContent"] [data-testid="stColumn"] > div {
         flex: 1 1 auto !important;
         display: flex !important;
         flex-direction: column !important;
         height: 100% !important;
     }
-    div[data-testid="stTabContent"] [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div {
-        flex: 1 1 auto !important;
+    div[data-testid="stTabContent"] [data-testid="stMarkdownContainer"] {
+        height: 100% !important;
         display: flex !important;
         flex-direction: column !important;
-        height: 100% !important;
+        flex: 1 1 auto !important;
+    }
+
+    .guide-steps-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        align-items: stretch;
+        width: 100%;
+        margin-bottom: 16px;
+    }
+    .guide-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        align-items: stretch;
+        width: 100%;
+        margin-bottom: 16px;
+    }
+    @media (max-width: 768px) {
+        .guide-steps-grid,
+        .guide-info-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     .guide-step-card {
@@ -433,24 +563,22 @@ CUSTOM_CSS = """
         border: 1px solid #374151;
         border-radius: 12px;
         padding: 16px 18px;
-        height: 100%;
-        min-height: 160px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        flex: 1 1 auto;
+        height: 100%;
+        width: 100%;
     }
     .guide-info-card {
         background-color: #111827;
         border: 1px solid #374151;
         border-radius: 12px;
         padding: 18px 20px;
-        height: 100%;
-        min-height: 400px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        flex: 1 1 auto;
+        height: 100%;
+        width: 100%;
     }
     </style>
 """

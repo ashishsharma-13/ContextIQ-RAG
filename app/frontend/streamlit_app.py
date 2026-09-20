@@ -7,7 +7,10 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+import importlib
 from app.config import settings
+import app.frontend.styles
+importlib.reload(app.frontend.styles)
 from app.frontend.styles import apply_custom_styles
 from app.frontend.utils import get_base64_image, init_session_state, check_backend_health
 from app.frontend.components.sidebar import render_sidebar
@@ -79,27 +82,31 @@ render_sidebar(
 if LOGO_DATA_URL:
     st.markdown(f"""
     <div class="header-container">
-        <div style="background-color: #1F2937; border: 1px solid #374151; border-radius: 16px; padding: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-            <img src="{LOGO_DATA_URL}" style="width: 64px; height: 64px; border-radius: 12px; object-fit: cover;">
+        <div class="header-brand-row">
+            <div class="header-logo-box">
+                <img src="{LOGO_DATA_URL}" class="header-logo-img">
+            </div>
+            <div class="header-titles">
+                <div class="main-title">ContextIQ</div>
+                <div class="main-subtitle">Context-Aware Personal Knowledge Assistant</div>
+            </div>
         </div>
-        <div>
-            <div class="main-title">ContextIQ</div>
-            <div class="main-subtitle">Context-Aware Personal Knowledge Assistant</div>
-            <div class="main-desc">Upload your documents and ask natural language questions with exact page citations.</div>
-        </div>
+        <div class="main-desc">Upload your documents and ask natural language questions with exact page citations.</div>
     </div>
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
     <div class="header-container">
-        <div class="header-icon-box">
-            <svg style="width:32px;height:32px;fill:#FFFFFF;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <div class="header-brand-row">
+            <div class="header-icon-box">
+                <svg style="width:32px;height:32px;fill:#FFFFFF;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            </div>
+            <div class="header-titles">
+                <div class="main-title">ContextIQ</div>
+                <div class="main-subtitle">Context-Aware Personal Knowledge Assistant</div>
+            </div>
         </div>
-        <div>
-            <div class="main-title">ContextIQ</div>
-            <div class="main-subtitle">Context-Aware Personal Knowledge Assistant</div>
-            <div class="main-desc">Upload your documents and ask natural language questions with exact page citations.</div>
-        </div>
+        <div class="main-desc">Upload your documents and ask natural language questions with exact page citations.</div>
     </div>
     """, unsafe_allow_html=True)
 
