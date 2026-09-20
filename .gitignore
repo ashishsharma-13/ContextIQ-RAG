@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+env/
+venv/
+
+# Environment
+.env
+
+# Vectorstore & Uploaded Documents
+chroma_db/
+documents/
+
+# Antigravity artifacts/cache
+.gemini/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+.env
