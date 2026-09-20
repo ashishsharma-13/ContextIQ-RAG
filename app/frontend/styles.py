@@ -185,21 +185,17 @@ CUSTOM_CSS = """
         margin-top: 6px;
     }
 
-    /* Unified Single-Row Search & Controls Dock Bar - Seamless Single Capsule */
+    /* Unified Single-Row Search & Controls Dock Bar */
     .st-key-chat_unified_bar {
         position: fixed !important;
         bottom: 28px !important;
         z-index: 999 !important;
-        background-color: #111827 !important;
-        border: 1px solid #374151 !important;
-        border-radius: 20px !important;
-        padding: 4px 12px !important;
+        background-color: rgba(15, 23, 42, 0.96) !important;
+        backdrop-filter: blur(16px) !important;
+        border: 1px solid #334155 !important;
+        border-radius: 16px !important;
+        padding: 8px 12px !important;
         box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-    }
-    .st-key-chat_unified_bar:focus-within {
-        border-color: #3B82F6 !important;
-        box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
     }
 
     /* Desktop View: Centered in content area with safe max width */
@@ -218,7 +214,7 @@ CUSTOM_CSS = """
             transform: translateX(-50%) !important;
             width: calc(100vw - 32px) !important;
             max-width: 720px !important;
-            padding: 2px 8px !important;
+            padding: 6px 8px !important;
         }
     }
 
@@ -237,89 +233,66 @@ CUSTOM_CSS = """
     }
     .st-key-chat_unified_bar [data-testid="stHorizontalBlock"] {
         align-items: center !important;
-        gap: 6px !important;
+        gap: 8px !important;
         padding: 0px !important;
         margin: 0px !important;
-        flex-wrap: nowrap !important;
     }
     .st-key-chat_unified_bar [data-testid="stColumn"] {
         padding: 0px !important;
         margin: 0px !important;
-        display: flex !important;
-        align-items: center !important;
     }
-
-    /* Subtle vertical section divider between Category and Search Input */
-    .st-key-chat_unified_bar [data-testid="stColumn"]:first-child {
-        border-right: 1px solid #2D3748 !important;
-        padding-right: 8px !important;
-    }
-    /* Subtle vertical section divider between Search Input and Top Chunks */
-    .st-key-chat_unified_bar [data-testid="stColumn"]:nth-child(3) {
-        border-left: 1px solid #2D3748 !important;
-        padding-left: 8px !important;
-    }
-
-    /* Seamless Selectboxes: transparent background, no harsh borders */
     .st-key-chat_unified_bar [data-testid="stSelectbox"] {
         margin: 0px !important;
         padding: 0px !important;
-        width: 100% !important;
     }
-    .st-key-chat_unified_bar [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        font-size: 0.84rem !important;
-        font-weight: 500 !important;
-        color: #F1F5F9 !important;
-        padding: 4px 6px !important;
-        cursor: pointer !important;
-    }
-    .st-key-chat_unified_bar [data-testid="stSelectbox"] div[data-baseweb="select"]:hover > div {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 8px !important;
-    }
-
-    /* Seamless Chat Input: transparent, no nested box, no separate border */
-    .st-key-chat_unified_bar [data-testid="stChatInput"],
-    .st-key-chat_unified_bar [data-testid="stChatInput"] > div,
-    .st-key-chat_unified_bar [data-testid="stChatInput"] [data-baseweb="textarea"],
-    .st-key-chat_unified_bar [data-testid="stChatInput"] textarea {
+    .st-key-chat_unified_bar [data-testid="stChatInput"] {
         margin: 0px !important;
         padding: 0px !important;
         position: static !important;
         transform: none !important;
         width: 100% !important;
-        background-color: transparent !important;
-        border: none !important;
+        background-color: #1E293B !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
         box-shadow: none !important;
-        outline: none !important;
-        color: #F1F5F9 !important;
     }
-
-    /* Seamless Clear Button */
+    .st-key-chat_unified_bar [data-testid="stChatInput"]:focus-within {
+        border-color: #3B82F6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+    }
     .st-key-chat_unified_bar [data-testid="stButton"] {
         margin: 0px !important;
         padding: 0px !important;
     }
-    .st-key-chat_unified_bar button {
-        border-radius: 8px !important;
-        border: none !important;
-        background-color: transparent !important;
-        color: #9CA3AF !important;
-        padding: 6px !important;
-        box-shadow: none !important;
-    }
-    .st-key-chat_unified_bar button:hover {
-        background-color: rgba(239, 68, 68, 0.12) !important;
-        color: #EF4444 !important;
-    }
-
     .st-key-chat_unified_bar div[data-testid="stWidgetLabel"] {
         display: none !important;
         margin: 0 !important;
         padding: 0 !important;
+    }
+
+    /* Matching selectboxes inside unified dock bar */
+    .st-key-chat_unified_bar [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+        background-color: #1E293B !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        font-size: 0.84rem !important;
+        font-weight: 500 !important;
+        color: #F1F5F9 !important;
+        height: 42px !important;
+    }
+
+    /* Clear chat button inside unified dock bar */
+    .st-key-chat_unified_bar button {
+        border-radius: 12px !important;
+        border: 1px solid #334155 !important;
+        background-color: #1E293B !important;
+        color: #9CA3AF !important;
+        height: 42px !important;
+    }
+    .st-key-chat_unified_bar button:hover {
+        background-color: #374151 !important;
+        color: #EF4444 !important;
+        border-color: #EF4444 !important;
     }
 
     .chat-footer-hint {

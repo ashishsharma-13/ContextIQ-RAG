@@ -44,7 +44,7 @@ def render_chat_tab(
     default_k_idx = chunk_options.index(settings.TOP_K) if settings.TOP_K in chunk_options else 2
 
     with st.container(key="chat_unified_bar"):
-        col_cat, col_input, col_k, col_clear = st.columns([1.7, 5.2, 1.7, 0.6], vertical_alignment="center")
+        col_cat, col_input, col_k, col_clear = st.columns([1.8, 5.0, 1.7, 0.7], vertical_alignment="center")
         with col_cat:
             categories = ["All", "Academic", "IT", "Projects", "Policies", "Notices", "Guides", "FAQs", "Research", "Other"]
             selected_category = st.selectbox(
